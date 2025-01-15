@@ -10,18 +10,26 @@ from tqdm import tqdm
 # 1. 설정 및 모델 로드
 # =============================
 
+#=================================================================
+#초기값 설정
+#=================================================================
+#실행 경로 설정 
 # 경로 설정
-script_directory = os.path.dirname(os.path.abspath(__file__))
-os.chdir(script_directory)
+script_dir = os.path.dirname(os.path.abspath(__file__))
+os.chdir(script_dir)
+Models_dir = os.path.abspath(os.path.join(script_dir, "../00_Models"))
+Videos_dir = os.path.abspath(os.path.join(script_dir, "../00_Sample_Video"))
+video_file = os.path.join(Videos_dir, "input","road.mp4" )
+yolo_model_file = os.path.join(Models_dir, "yolov8n.pt" )
+road_seg_model_file  = os.path.join(Models_dir, "road-segmentation-adas-0001", "FP16-INT8", "road-segmentation-adas-0001.xml" )
+video_out_file = os.path.join(Videos_dir, "output","road_depth_output_video.mp4" )
+
 
 print("CUDA Available: ", torch.cuda.is_available())
 print("CUDA Device Count: ", torch.cuda.device_count())
 print("Current CUDA Device: ", torch.cuda.current_device())
 print("CUDA Device Name: ", torch.cuda.get_device_name(0))
 
-model_path = os.path.join('../YOLO_Model', 'yolov8n.pt')
-video_path = '../Sample_video/input/temp.mp4'
-output_video_path = '../Sample_video/output/depth_overlay.mp4'
 
 # MiDaS 모델 로드(DPT_Large | DPT_Hybrid | MiDaS_small  택 1)
 #midas = torch.hub.load("intel-isl/MiDaS", "MiDaS_small").to('cuda' if torch.cuda.is_available() else 'cpu').eval()
@@ -35,7 +43,7 @@ transform = midas_transforms.small_transform  # 경량화된 변환 사용
 #transform = midas_transforms.dpt_transform  # 경량화된 변환 사용
 
 # YOLO 모델 로드
-yolo_model = YOLO(model_path)
+yolo_model = YOLO(yolo_model_file)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 yolo_model.to(device)
 
@@ -43,11 +51,11 @@ yolo_model.to(device)
 # 2. 비디오 설정
 # =============================
 
-cap = cv2.VideoCapture(video_path)
+cap = cv2.VideoCapture(video_file)
 fps = int(cap.get(cv2.CAP_PROP_FPS))
 frame_width, frame_height = 640, 480
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-out = cv2.VideoWriter(output_video_path, fourcc, fps, (frame_width, frame_height))
+out = cv2.VideoWriter(video_out_file, fourcc, fps, (frame_width, frame_height))
 
 # =============================
 # 3. PIP 함수 (Depth 맵을 오른쪽 상단에 오버레이)
